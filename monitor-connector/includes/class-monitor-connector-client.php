@@ -21,7 +21,7 @@ final class Client {
 
 	/** @param string $code @return array<string,string>|\WP_Error */
 	public function pair( $code ) {
-		if ( ! is_string( $code ) || '' === trim( $code ) || strlen( $code ) > 256 || ! $this->valid_base() ) {
+		if ( ! is_string( $code ) || '' === trim( $code ) || strlen( $code ) > 256 || ! $this->valid_base() || ! $this->valid_endpoint( 'pair_endpoint' ) ) {
 			return new \WP_Error( 'pair_invalid_input' );
 		}
 		$body = array( 'pairing_code' => trim( $code ), 'plugin_version' => MONITOR_CONNECTOR_VERSION );
@@ -42,7 +42,7 @@ final class Client {
 
 	/** @param array<string,mixed> $payload @return true|\WP_Error */
 	public function report( $payload ) {
-		if ( ! $this->valid_base() || ! self::valid_secret( $this->settings['secret'] ) ) {
+		if ( ! $this->valid_base() || ! $this->valid_endpoint( 'report_endpoint' ) || ! self::valid_secret( $this->settings['secret'] ) ) {
 			return new \WP_Error( 'report_not_configured' );
 		}
 		$raw = self::encode_payload( $payload );
@@ -84,7 +84,7 @@ final class Client {
 
 	/** @return true|\WP_Error */
 	public function revoke() {
-		if ( ! $this->valid_base() ) {
+		if ( ! $this->valid_base() || ! $this->valid_endpoint( 'revoke_endpoint' ) ) {
 			return new \WP_Error( 'revoke_invalid_url' );
 		}
 		$raw = wp_json_encode( array( 'connection_id' => $this->settings['connection_id'] ), JSON_UNESCAPED_SLASHES );
@@ -115,6 +115,19 @@ final class Client {
 	/** @return bool */
 	private function valid_base() {
 		return Plugin::valid_base_url( $this->settings['monitor_url'] );
+	}
+
+	/** Endpoint settings must be relative paths on the configured Monitor host. @param string $key @return bool */
+	private function valid_endpoint( $key ) {
+		if ( ! isset( $this->settings[ $key ] ) || ! is_string( $this->settings[ $key ] ) ) {
+			return false;
+		}
+		$path = $this->settings[ $key ];
+		if ( '' === $path || preg_match( '/[\x00-\x20\x7f\\\\?#]/', $path ) || preg_match( '/^[a-z][a-z0-9+.-]*:/i', $path ) || 0 === strpos( $path, '//' ) ) {
+			return false;
+		}
+		$parts = wp_parse_url( $path );
+		return is_array( $parts ) && ! array_intersect( array( 'scheme', 'host', 'user', 'pass', 'query', 'fragment' ), array_keys( $parts ) );
 	}
 
 	/** @param array<string,mixed> $body @return array<string,mixed>|\WP_Error */

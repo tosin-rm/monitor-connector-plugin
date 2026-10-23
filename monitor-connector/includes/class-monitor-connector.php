@@ -130,7 +130,7 @@ final class Plugin {
 	/** @param string $url @return bool */
 	public static function valid_base_url( $url ) {
 		$parts = wp_parse_url( $url );
-		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) || isset( $parts['query'] ) || isset( $parts['fragment'] ) ) {
 			return false;
 		}
 		$host = strtolower( $parts['host'] );
@@ -297,7 +297,7 @@ final class Plugin {
 
 	public function register_privacy_text() {
 		if ( function_exists( 'wp_add_privacy_policy_content' ) ) {
-			$content = '<p>' . esc_html__( 'Monitor Connector sends the WordPress core version, installed plugin slugs, display names and versions, active status, update availability and known update versions, the spam comment count, and a UTC collection timestamp to the paired Monitor website. It also sends a request ID and schema version for authentication and processing. This data is used to provide a read-only site health inventory. Monitor controls its retention. Administrators can disconnect and request credential revocation from Settings → Monitor Connector; local credentials are removed even if remote revocation is unavailable.', 'monitor-connector' ) . '</p>';
+			$content = '<p>' . esc_html__( 'Monitor Connector sends the WordPress core version, installed plugin slugs, display names and versions, active status, update availability and known update versions, the spam comment count, a UTC collection timestamp, request ID and schema version to the paired Monitor website. Reports also include security source status: this plugin currently marks vulnerability data unavailable for central lookup, marks scanner and suspicious-activity data unsupported, and sends no security findings or scan completion time. This data is used to provide a read-only site health inventory. Monitor controls its retention. Administrators can disconnect and request credential revocation from Settings → Monitor Connector; local credentials are removed even if remote revocation is unavailable.', 'monitor-connector' ) . '</p>';
 			wp_add_privacy_policy_content( __( 'Monitor Connector', 'monitor-connector' ), $content );
 		}
 	}

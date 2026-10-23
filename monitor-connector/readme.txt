@@ -3,14 +3,14 @@ Contributors: monitor-connector
 Tags: monitoring, health, inventory
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 
-Sends a read-only WordPress health inventory to one paired Monitor website.
+Sends a read-only WordPress health inventory and explicit security source status to one paired Monitor website.
 
 == Description ==
 
-This plugin reports the WordPress core version, installed plugin identifiers/names/versions/active state/update state, spam comment count, and a UTC collection time. It never sends comment or user records, posts, filesystem data, or credentials. It does not perform WordPress management actions.
+This plugin reports the WordPress core version, installed plugin identifiers/names/versions/active state/update state, spam comment count, UTC collection time, and explicit security source status. It has no approved vulnerability-feed or scanner integration: vulnerability data is marked unavailable for central Monitor lookup, suspicious activity and scan status are marked unsupported, and no scan timestamp is claimed. It never sends comment or user records, posts, filesystem data, or credentials. It does not perform WordPress management actions.
 
 == Installation ==
 
@@ -44,15 +44,17 @@ For local development only, HTTP is permitted when the base host is localhost, 1
 
 Configure a common base URL plus relative endpoint paths. The defaults are `/api/monitor-connector/pair`, `/api/monitor-connector/report`, and `/api/monitor-connector/revoke`; change them for the deployment before pairing if needed.
 
-Pair endpoint: HTTPS POST JSON `{ "pairing_code": "<single-use short-lived code>", "plugin_version": "1.0.0" }`. On success (2xx), return JSON `{ "connection_id": "stable-id", "credential_id": "key-id", "secret": "at-least-32-character-per-site-secret" }`. Pairing code must be consumed atomically and bound to exactly one existing Monitor website. The plugin never retains the pairing code.
+Pair endpoint: HTTPS POST JSON `{ "pairing_code": "<single-use short-lived code>", "plugin_version": "1.1.0" }`. On success (2xx), return JSON `{ "connection_id": "stable-id", "credential_id": "key-id", "secret": "at-least-32-character-per-site-secret" }`. Pairing code must be consumed atomically and bound to exactly one existing Monitor website. The plugin never retains the pairing code.
 
-Report endpoint: POST the raw JSON body shown below, with headers `X-Monitor-Connection-Id`, `X-Monitor-Key-Id`, `X-Monitor-Timestamp` (Unix seconds), `X-Monitor-Request-Id`, and `X-Monitor-Signature` (`sha256=<lowercase hex HMAC-SHA256(raw body, per-site secret)>`). The request ID in the header must equal the body's request_id. The Monitor server must check freshness, one-time request IDs, constant-time signature equality, connection ownership, schema/field bounds, and rate limits. A 2xx response means accepted; any non-2xx is treated as failure. Report response body is ignored.
+Report endpoint: POST the raw JSON body shown below, with headers `X-Monitor-Connection-Id`, `X-Monitor-Key-Id`, `X-Monitor-Timestamp` (Unix seconds), `X-Monitor-Request-Id`, and `X-Monitor-Signature` (`sha256=<lowercase hex HMAC-SHA256(raw body, per-site secret)>`). The request ID in the header must equal the body's request_id. The Monitor server must check freshness, one-time request IDs, constant-time signature equality, connection ownership, schema/field bounds, and rate limits. Reports use schema 1.0 by default for compatibility. After the receiver has been updated and verified to accept and persist the 1.1 security fields, enable it with the `monitor_connector_schema_version` filter returning `'1.1'`. A 2xx response means accepted; any non-2xx is treated as failure. Report response body is ignored.
 
 Revoke endpoint: signed POST using the same headers over raw JSON `{ "connection_id": "stable-id" }`. Return 2xx only when revocation is confirmed. The plugin removes local credentials regardless of this response.
 
-Sample report payload (values illustrative):
+Sample default report payload (values illustrative; schema 1.0 omits the security object):
 
     {"schema_version":"1.0","request_id":"a9c73ac7-4af0-4d8d-87c4-136474eb837f","collected_at":"2026-01-02T03:04:05Z","wordpress_version":"6.7.1","plugins":[{"slug":"hello-dolly","name":"Hello Dolly","version":"1.7.2","active":false,"update_available":null,"update_version":null}],"spam_comment_count":2}
+
+For the opt-in 1.1 payload and security field semantics, see `SECURITY-REPORT-CONTRACT.md`.
 
 Sample response: `HTTP/1.1 202 Accepted` and `{"accepted":true,"request_id":"a9c73ac7-4af0-4d8d-87c4-136474eb837f"}`. The client intentionally does not consume response content.
 

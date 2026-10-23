@@ -50,19 +50,57 @@ final class Inventory {
 		if ( ! is_object( $spam ) || ! isset( $spam->spam ) || ! is_numeric( $spam->spam ) ) {
 			return new \WP_Error( 'inventory_spam_count_unavailable' );
 		}
-		$payload = array(
-			'schema_version' => MONITOR_CONNECTOR_SCHEMA_VERSION,
-			'request_id'     => self::request_id(),
-			'collected_at'   => gmdate( 'Y-m-d\TH:i:s\Z' ),
-			'wordpress_version' => sanitize_text_field( get_bloginfo( 'version' ) ),
-			'plugins'        => $plugins,
-			'spam_comment_count' => absint( $spam->spam ),
-		);
+		$payload = self::report_payload( $plugins, absint( $spam->spam ), get_bloginfo( 'version' ) );
 		$json = wp_json_encode( $payload, JSON_UNESCAPED_SLASHES );
 		if ( false === $json || strlen( $json ) > self::MAX_PAYLOAD_BYTES ) {
 			return new \WP_Error( 'inventory_payload_limit' );
 		}
 		return $payload;
+	}
+
+	/** Build the schema-versioned report. @param array<int,array<string,mixed>> $plugins @param int $spam_count @param string $wordpress_version @return array<string,mixed> */
+	public static function report_payload( $plugins, $spam_count, $wordpress_version ) {
+		$schema_version = apply_filters( 'monitor_connector_schema_version', '1.0' );
+		if ( ! in_array( $schema_version, array( '1.0', '1.1' ), true ) ) {
+			$schema_version = '1.0';
+		}
+		$payload = array(
+			'schema_version' => $schema_version,
+			'request_id'     => self::request_id(),
+			'collected_at'   => gmdate( 'Y-m-d\TH:i:s\Z' ),
+			'wordpress_version' => sanitize_text_field( $wordpress_version ),
+			'plugins'        => $plugins,
+			'spam_comment_count' => absint( $spam_count ),
+		);
+		if ( '1.1' === $schema_version ) {
+			$payload['security'] = self::security_status( $plugins );
+		}
+		return $payload;
+	}
+
+	/**
+	 * Security inputs remain unknown until a documented source or supported scanner
+	 * integration is configured. Inventory collection is never represented as a scan.
+	 * @param array<int,array<string,mixed>> $plugins
+	 * @return array<string,mixed>
+	 */
+	public static function security_status( $plugins ) {
+		return array(
+			'vulnerability_data' => array(
+				'status'       => 'unavailable',
+				'source'       => null,
+				'checked_at'   => null,
+				'findings'     => array(),
+				'note'         => 'No approved vulnerability source is configured on this site; Monitor should perform central lookups using plugin slug and installed version.',
+			),
+			'suspicious_activity' => array(
+				'status'       => 'unsupported',
+				'source'       => null,
+				'findings'     => array(),
+			),
+			'last_successful_scan_at' => null,
+			'scan_status'             => 'unsupported',
+		);
 	}
 
 	/** @param string $file @param array<string,mixed> $data @return string */
