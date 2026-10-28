@@ -42,9 +42,9 @@ final class Plugin {
 	public static function defaults() {
 		return array(
 			'monitor_url'       => '',
-			'pair_endpoint'     => '/api/monitor-connector/pair',
-			'report_endpoint'   => '/api/monitor-connector/report',
-			'revoke_endpoint'   => '/api/monitor-connector/revoke',
+			'pair_endpoint'     => '/api/connectors/wordpress/pair',
+			'report_endpoint'   => '/api/connectors/wordpress/report',
+			'revoke_endpoint'   => '/api/connectors/wordpress/revoke',
 			'interval_hours'    => self::DEFAULT_INTERVAL,
 			'connection_id'     => '',
 			'credential_id'     => '',
@@ -102,7 +102,19 @@ final class Plugin {
 
 	/** @return array<string,mixed> */
 	public static function settings() {
-		return wp_parse_args( get_option( self::OPTION, array() ), self::defaults() );
+		$settings = wp_parse_args( get_option( self::OPTION, array() ), self::defaults() );
+		$defaults = self::defaults();
+		$legacy = array(
+			'pair_endpoint' => '/api/monitor-connector/pair',
+			'report_endpoint' => '/api/monitor-connector/report',
+			'revoke_endpoint' => '/api/monitor-connector/revoke',
+		);
+		foreach ( $legacy as $key => $path ) {
+			if ( $settings[ $key ] === $path ) {
+				$settings[ $key ] = $defaults[ $key ];
+			}
+		}
+		return $settings;
 	}
 
 	public function register_settings() {

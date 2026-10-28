@@ -65,7 +65,7 @@ final class Inventory {
 			$schema_version = '1.0';
 		}
 		$payload = array(
-			'schema_version' => $schema_version,
+			'schema_version' => (float) $schema_version,
 			'request_id'     => self::request_id(),
 			'collected_at'   => gmdate( 'Y-m-d\TH:i:s\Z' ),
 			'wordpress_version' => sanitize_text_field( $wordpress_version ),

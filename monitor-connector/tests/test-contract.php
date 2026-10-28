@@ -39,16 +39,18 @@ foreach ( array( '//attacker.example/x', 'https://attacker.example/x', '/x?next=
 }
 $GLOBALS['test_schema'] = '1.0';
 $legacy = \MonitorConnector\Inventory::report_payload( array(), 0, '6.7' );
-assert_same( '1.0', $legacy['schema_version'], 'default schema is backward compatible' );
+assert_same( 1.0, $legacy['schema_version'], 'default schema is numeric and backward compatible' );
 assert_same( false, array_key_exists( 'security', $legacy ), 'legacy schema omits new fields' );
 $GLOBALS['test_schema'] = '1.1';
 $modern = \MonitorConnector\Inventory::report_payload( array(), 0, '6.7' );
-assert_same( '1.1', $modern['schema_version'], 'opt-in schema version' );
+assert_same( 1.1, $modern['schema_version'], 'opt-in schema version is numeric' );
 assert_same( 'unsupported', $modern['security']['scan_status'], 'opt-in security state' );
-$payload = array( 'schema_version' => '1.0', 'request_id' => 'r1', 'plugins' => array(), 'spam_comment_count' => 0 );
+$payload = array( 'schema_version' => 1, 'request_id' => 'a9c73ac7-4af0-4d8d-87c4-136474eb837f', 'plugins' => array(), 'spam_comment_count' => 0 );
 $raw = wp_json_encode( $payload, JSON_UNESCAPED_SLASHES );
 $sig = hash_hmac( 'sha256', $raw, str_repeat( 's', 32 ) );
 assert_same( hash_hmac( 'sha256', $raw, str_repeat( 's', 32 ) ), $sig, 'HMAC uses exact raw JSON body' );
 assert_same( $sig, \MonitorConnector\Client::sign( $raw, str_repeat( 's', 32 ) ), 'client signer matches HMAC' );
+$signed_request = '1234567890.' . $payload['request_id'] . '.' . $raw;
+assert_same( hash_hmac( 'sha256', $signed_request, str_repeat( 's', 32 ) ), \MonitorConnector\Client::sign( $signed_request, str_repeat( 's', 32 ) ), 'client signer matches Monitor timestamp and request ID contract' );
 assert_same( $raw, \MonitorConnector\Client::encode_payload( $payload ), 'client preserves exact serialized body' );
 fwrite( STDOUT, "All contract tests passed.\n" );

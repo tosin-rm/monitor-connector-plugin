@@ -30,12 +30,12 @@ final class Client {
 			return $response;
 		}
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
-		if ( ! is_array( $data ) || empty( $data['connection_id'] ) || empty( $data['credential_id'] ) || empty( $data['secret'] ) || ! self::valid_identifier( $data['connection_id'] ) || ! self::valid_identifier( $data['credential_id'] ) || ! self::valid_secret( $data['secret'] ) ) {
+		if ( ! is_array( $data ) || empty( $data['connection_id'] ) || empty( $data['secret'] ) || ! self::valid_identifier( $data['connection_id'] ) || ! self::valid_secret( $data['secret'] ) ) {
 			return new \WP_Error( 'pair_invalid_response' );
 		}
 		return array(
 			'connection_id' => sanitize_text_field( $data['connection_id'] ),
-			'credential_id' => sanitize_text_field( $data['credential_id'] ),
+			'credential_id' => sanitize_text_field( $data['credential_id'] ?? $data['connection_id'] ),
 			'secret' => $data['secret'],
 		);
 	}
@@ -51,15 +51,14 @@ final class Client {
 		}
 		$time = (string) time();
 		$request_id = isset( $payload['request_id'] ) ? $payload['request_id'] : Inventory::request_id();
-		$signature = self::sign( $raw, $this->settings['secret'] );
+		$signature = self::sign( $time . '.' . $request_id . '.' . $raw, $this->settings['secret'] );
 		$headers = array(
 			'Content-Type' => 'application/json; charset=utf-8',
 			'Accept' => 'application/json',
-			'X-Monitor-Connection-Id' => $this->settings['connection_id'],
-			'X-Monitor-Key-Id' => $this->settings['credential_id'],
+			'X-Monitor-Connection' => $this->settings['connection_id'],
 			'X-Monitor-Timestamp' => $time,
 			'X-Monitor-Request-Id' => $request_id,
-			'X-Monitor-Signature' => 'sha256=' . $signature,
+			'X-Monitor-Signature' => $signature,
 		);
 		$response = wp_remote_post( $this->endpoint( 'report_endpoint' ), array( 'timeout' => self::TIMEOUT, 'redirection' => 0, 'headers' => $headers, 'body' => $raw, 'data_format' => 'body', 'limit_response_size' => self::MAX_RESPONSE_BYTES, 'sslverify' => true ) );
 		if ( is_wp_error( $response ) ) {
@@ -92,11 +91,10 @@ final class Client {
 		$request_id = Inventory::request_id();
 		$headers = array(
 			'Content-Type' => 'application/json; charset=utf-8',
-			'X-Monitor-Connection-Id' => $this->settings['connection_id'],
-			'X-Monitor-Key-Id' => $this->settings['credential_id'],
+			'X-Monitor-Connection' => $this->settings['connection_id'],
 			'X-Monitor-Timestamp' => $time,
 			'X-Monitor-Request-Id' => $request_id,
-			'X-Monitor-Signature' => 'sha256=' . self::sign( $raw, $this->settings['secret'] ),
+			'X-Monitor-Signature' => self::sign( $time . '.' . $request_id . '.' . $raw, $this->settings['secret'] ),
 		);
 		$response = wp_remote_post( $this->endpoint( 'revoke_endpoint' ), array( 'timeout' => self::TIMEOUT, 'redirection' => 0, 'headers' => $headers, 'body' => $raw, 'data_format' => 'body', 'limit_response_size' => self::MAX_RESPONSE_BYTES, 'sslverify' => true ) );
 		if ( is_wp_error( $response ) || (int) wp_remote_retrieve_response_code( $response ) < 200 || (int) wp_remote_retrieve_response_code( $response ) >= 300 ) {
