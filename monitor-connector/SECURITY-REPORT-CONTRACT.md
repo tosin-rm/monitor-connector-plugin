@@ -1,6 +1,6 @@
 # WordPress security report contract
 
-**Active contract:** Monitor Connector sends schema `1.1` by default. The Monitor report endpoint accepts and persists schema `1.1`. Plugin version is `1.4.1`.
+**Active contract:** Monitor Connector sends schema `1.1` by default. The Monitor report endpoint accepts and persists schema `1.1`. Plugin version is `1.4.2`.
 
 ## Report fields
 
@@ -27,6 +27,7 @@ The report includes WordPress version, installed plugin slug/name/version/active
       "reason": null,
       "checked_at": "2026-10-29T12:00:00Z",
       "checked_file_count": 1000,
+      "excluded_content_file_count": 0,
       "modified_file_count": 0,
       "missing_file_count": 0,
       "modified_files": [],
@@ -65,7 +66,7 @@ The report includes WordPress version, installed plugin slug/name/version/active
 ## What the checks mean
 
 - **Plugin vulnerabilities:** Monitor, not the WordPress connector, matches installed plugin slugs and versions against the centrally cached Wordfence Intelligence production feed. The Wordfence API key stays in Monitor/worker secrets, never on the WordPress site. Feed matching currently covers plugins; it does not cover WordPress core or themes.
-- **Core integrity:** On each report, the connector obtains official checksums for the installed WordPress version and locale, then compares the corresponding core files on disk. It reports up to 100 relative paths for changed or missing files and includes total counts. A mismatch can be a legitimate local edit; it is evidence to review, not proof of compromise. An `unavailable` result includes a safe reason code and is never treated as clean.
+- **Core integrity:** On each report, the connector obtains official checksums for the installed WordPress version and locale, then compares WordPress core files on disk. Paths under `wp-content/` are excluded because bundled themes/plugins can be absent or customized and are managed separately; the excluded count is reported. It reports up to 100 relative paths for changed or missing core files. A mismatch can be a legitimate local edit; it is evidence to review, not proof of compromise. An `unavailable` result includes a safe reason code and is never treated as clean.
 - **Plugin integrity:** The connector checks installed plugin files against WordPress.org checksum manifests when available. It fetches at most eight uncached manifests per report, caches manifests for 12 hours, and caps the total number of plugin files checked per report. Premium/custom plugins without public manifests, exhausted limits, and failed requests remain uncovered; the report explicitly counts checked, unavailable, and not-checked plugins. Changed or missing file paths are capped at 100.
 - **Local code inspection:** The connector reads PHP files locally from plugins, themes, must-use plugins, and uploads, within limits of 2,000 files and 20 MiB per report. It looks for a small set of high-risk patterns such as encoded content passed to dynamic execution and request parameters used as include paths. Only relative file paths, rule identifiers, and descriptions are reported; source contents are not sent. The check is heuristic, can miss malware, and can flag legitimate code. Partial coverage is marked.
 - **Suspicious activity / malware:** The connector does not inspect login history or run an antivirus signature engine. `suspicious_activity` remains `unsupported`; static code findings are reported separately as `local_file_scan` and are not presented as confirmed malware. `scan_status` and `last_successful_scan_at` remain unsupported/null until a dedicated malware or activity-log source is integrated.

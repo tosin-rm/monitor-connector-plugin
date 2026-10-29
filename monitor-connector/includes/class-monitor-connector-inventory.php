@@ -139,6 +139,7 @@ final class Inventory {
 			'source' => null,
 			'checked_at' => null,
 			'checked_file_count' => 0,
+			'excluded_content_file_count' => 0,
 			'modified_file_count' => 0,
 			'missing_file_count' => 0,
 			'modified_files' => array(),
@@ -172,10 +173,17 @@ final class Inventory {
 		$missing = array();
 		$modified_count = 0;
 		$missing_count = 0;
+		$excluded_content_file_count = 0;
 		foreach ( $checksums as $relative => $expected ) {
 			if ( ! is_string( $relative ) || '' === $relative || '/' === $relative[0] || false !== strpos( $relative, "\\" ) || preg_match( '/[\x00-\x1f\x7f]/', $relative ) || preg_match( '#(?:^|/)\.\.(?:/|$)#', $relative ) || ! is_string( $expected ) || ! preg_match( '/\A[a-f0-9]{32}\z/i', $expected ) ) {
 				$unavailable['reason'] = 'checksum_data_invalid';
 				return $unavailable;
+			}
+			// The core checksum manifest can include bundled themes/plugins under wp-content.
+			// Those are independently managed and may be absent or customized by site owners.
+			if ( 0 === strpos( $relative, 'wp-content/' ) || 'wp-content' === $relative ) {
+				$excluded_content_file_count++;
+				continue;
 			}
 			$path = ABSPATH . $relative;
 			if ( ! is_file( $path ) ) {
@@ -207,7 +215,8 @@ final class Inventory {
 			'reason' => null,
 			'source' => 'wordpress_core_checksums',
 			'checked_at' => gmdate( 'Y-m-d\TH:i:s\Z' ),
-			'checked_file_count' => count( $checksums ),
+			'checked_file_count' => count( $checksums ) - $excluded_content_file_count,
+			'excluded_content_file_count' => $excluded_content_file_count,
 			'modified_file_count' => $modified_count,
 			'missing_file_count' => $missing_count,
 			'modified_files' => $modified,

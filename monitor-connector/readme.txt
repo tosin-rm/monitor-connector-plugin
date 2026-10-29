@@ -3,14 +3,14 @@ Contributors: monitor-connector
 Tags: monitoring, health, inventory
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 
 Sends a read-only WordPress health inventory and bounded security inspection results to one paired Monitor website.
 
 == Description ==
 
-This plugin reports WordPress and plugin inventory, spam-comment count, WordPress core checksums, WordPress.org plugin checksums when available, and bounded static PHP pattern inspection across plugins, themes, must-use plugins, and uploads. File contents and user/comment records are never sent. Static pattern matches are leads for review, not proof of malware. This is not an antivirus signature scanner and it does not inspect login/activity logs or perform WordPress management actions. Premium/custom plugins without published checksums and any paths beyond the safety limits are reported as uncovered.
+This plugin reports WordPress and plugin inventory, spam-comment count, WordPress core checksums (excluding independently managed wp-content files), WordPress.org plugin checksums when available, and bounded static PHP pattern inspection across plugins, themes, must-use plugins, and uploads. File contents and user/comment records are never sent. Static pattern matches are leads for review, not proof of malware. This is not an antivirus signature scanner and it does not inspect login/activity logs or perform WordPress management actions. Premium/custom plugins without published checksums and any paths beyond the safety limits are reported as uncovered.
 
 == Installation ==
 
@@ -44,7 +44,7 @@ For local development only, HTTP is permitted when the base host is localhost, 1
 
 Configure the common Monitor base URL. The default endpoint paths match the Monitor app: `/api/connectors/wordpress/pair`, `/api/connectors/wordpress/report`, and `/api/connectors/wordpress/revoke`. Legacy placeholder paths saved by earlier plugin versions are upgraded automatically.
 
-Pair endpoint: HTTPS POST JSON `{ "pairing_code": "<single-use short-lived code>", "plugin_version": "1.4.1" }`. On success (2xx), return JSON containing `connection_id` and `secret`; the Monitor app may also return `report_url`. Pairing code must be consumed atomically and bound to exactly one existing Monitor website. The plugin never retains the pairing code.
+Pair endpoint: HTTPS POST JSON `{ "pairing_code": "<single-use short-lived code>", "plugin_version": "1.4.2" }`. On success (2xx), return JSON containing `connection_id` and `secret`; the Monitor app may also return `report_url`. Pairing code must be consumed atomically and bound to exactly one existing Monitor website. The plugin never retains the pairing code.
 
 Report endpoint: POST the raw report JSON body, with headers `X-Monitor-Connection`, `X-Monitor-Timestamp` (Unix seconds), `X-Monitor-Request-Id`, and `X-Monitor-Signature` (lowercase hex HMAC-SHA256 over `timestamp.request_id.raw_body`, using the per-site secret). The request ID in the header must equal the body's request_id. The Monitor server checks freshness, one-time request IDs, constant-time signature equality, connection ownership, schema/field bounds, and rate limits. Reports use numeric schema 1.1 by default and include bounded core/plugin checksum results and static code-pattern indicators. Set the `monitor_connector_schema_version` filter to `1.0` only for an older receiver. A 2xx response means accepted; any non-2xx is treated as failure.
 
