@@ -3,7 +3,7 @@ Contributors: monitor-connector
 Tags: monitoring, health, inventory
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 
 Sends a read-only WordPress health inventory and bounded security inspection results to one paired Monitor website.
@@ -44,7 +44,7 @@ For local development only, HTTP is permitted when the base host is localhost, 1
 
 Configure the common Monitor base URL. The default endpoint paths match the Monitor app: `/api/connectors/wordpress/pair`, `/api/connectors/wordpress/report`, and `/api/connectors/wordpress/revoke`. Legacy placeholder paths saved by earlier plugin versions are upgraded automatically.
 
-Pair endpoint: HTTPS POST JSON `{ "pairing_code": "<single-use short-lived code>", "plugin_version": "1.4.0" }`. On success (2xx), return JSON containing `connection_id` and `secret`; the Monitor app may also return `report_url`. Pairing code must be consumed atomically and bound to exactly one existing Monitor website. The plugin never retains the pairing code.
+Pair endpoint: HTTPS POST JSON `{ "pairing_code": "<single-use short-lived code>", "plugin_version": "1.4.1" }`. On success (2xx), return JSON containing `connection_id` and `secret`; the Monitor app may also return `report_url`. Pairing code must be consumed atomically and bound to exactly one existing Monitor website. The plugin never retains the pairing code.
 
 Report endpoint: POST the raw report JSON body, with headers `X-Monitor-Connection`, `X-Monitor-Timestamp` (Unix seconds), `X-Monitor-Request-Id`, and `X-Monitor-Signature` (lowercase hex HMAC-SHA256 over `timestamp.request_id.raw_body`, using the per-site secret). The request ID in the header must equal the body's request_id. The Monitor server checks freshness, one-time request IDs, constant-time signature equality, connection ownership, schema/field bounds, and rate limits. Reports use numeric schema 1.1 by default and include bounded core/plugin checksum results and static code-pattern indicators. Set the `monitor_connector_schema_version` filter to `1.0` only for an older receiver. A 2xx response means accepted; any non-2xx is treated as failure.
 

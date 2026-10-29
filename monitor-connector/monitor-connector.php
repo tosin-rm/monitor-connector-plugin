@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Monitor Connector
  * Description: Sends a read-only WordPress health inventory to a paired Monitor website.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: Monitor Connector
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MONITOR_CONNECTOR_VERSION', '1.4.0' );
+define( 'MONITOR_CONNECTOR_VERSION', '1.4.1' );
 // The paired Monitor receiver validates and stores schema 1.1 security results.
 define( 'MONITOR_CONNECTOR_SCHEMA_VERSION', '1.1' );
 define( 'MONITOR_CONNECTOR_OPTION', 'monitor_connector_settings' );

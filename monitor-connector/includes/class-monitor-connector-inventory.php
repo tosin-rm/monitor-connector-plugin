@@ -173,7 +173,8 @@ final class Inventory {
 		$modified_count = 0;
 		$missing_count = 0;
 		foreach ( $checksums as $relative => $expected ) {
-			if ( ! is_string( $relative ) || '' === $relative || ! preg_match( '#\A[A-Za-z0-9._/-]+\z#', $relative ) || '/' === $relative[0] || preg_match( '#(?:^|/)\.\.(?:/|$)#', $relative ) || ! is_string( $expected ) || ! preg_match( '/\A[a-f0-9]{32}\z/i', $expected ) ) {
+			if ( ! is_string( $relative ) || '' === $relative || '/' === $relative[0] || false !== strpos( $relative, "\\" ) || preg_match( '/[\x00-\x1f\x7f]/', $relative ) || preg_match( '#(?:^|/)\.\.(?:/|$)#', $relative ) || ! is_string( $expected ) || ! preg_match( '/\A[a-f0-9]{32}\z/i', $expected ) ) {
+				$unavailable['reason'] = 'checksum_data_invalid';
 				return $unavailable;
 			}
 			$path = ABSPATH . $relative;

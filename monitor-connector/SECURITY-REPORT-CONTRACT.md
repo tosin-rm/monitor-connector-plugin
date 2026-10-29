@@ -1,6 +1,6 @@
 # WordPress security report contract
 
-**Active contract:** Monitor Connector sends schema `1.1` by default. The Monitor report endpoint accepts and persists schema `1.1`. Plugin version is `1.4.0`.
+**Active contract:** Monitor Connector sends schema `1.1` by default. The Monitor report endpoint accepts and persists schema `1.1`. Plugin version is `1.4.1`.
 
 ## Report fields
 
