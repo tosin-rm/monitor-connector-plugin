@@ -137,7 +137,7 @@ final class Client {
 		}
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $code < 200 || $code >= 300 ) {
-			return new \WP_Error( 'pair_http_error' );
+			return new \WP_Error( 'pair_http_' . $code );
 		}
 		return $response;
 	}
